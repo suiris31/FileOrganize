@@ -5,10 +5,12 @@ from initial_config import *
 from tkinter import filedialog
 import os, time, datetime
 from pathlib import Path
+import logging
 
 class MyHandler(FileSystemEventHandler):
 
     def __init__(self):
+        logging.basicConfig(filename='FileOrganizer.log', format='%(levelname)s:%(message)s', level=logging.DEBUG)
         self.tkWindow = TkinterWindow(self)
         self.tkWindow.set_window_title()
         self.tkWindow.set_window_background()
@@ -48,6 +50,7 @@ class MyHandler(FileSystemEventHandler):
             os.rename(src, destination+'/'+filename)
             entry = "["+datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")+"] Fichier : "+filename+" déplacer dans le dossier : "+destination
             self.tkWindow.print_on_logbook(entry)
+            logging.info(entry)
         self.tkWindow.log_book.config(state="disabled")
     
     def run_once(self):
