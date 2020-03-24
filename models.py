@@ -3,9 +3,9 @@ from watchdog.observers import Observer
 from tkinter import *
 from initial_config import *
 from tkinter import filedialog
-import os, time, datetime
+import os, time, datetime, logging, subprocess, webbrowser
 from pathlib import Path
-import logging
+
 
 class MyHandler(FileSystemEventHandler):
 
@@ -85,6 +85,9 @@ class TkinterWindow:
         self.label_title = Label(self.window,text = text, font= font, bg = bg,fg= fg)
         self.label_title.grid(row=0, column=0, columnspan=3, sticky='new')
 
+    def open_folder(self, path):
+        webbrowser.open(path)
+
     def set_tracked_folder_button(self):
         self.button_select_tracked_folder = Button(
             self.window,
@@ -94,8 +97,16 @@ class TkinterWindow:
             fg='black', 
             command= lambda:[f() for f in [self.event_handler.get_traqued_folder, self.update_traqued_folder]])
         self.button_select_tracked_folder.grid(row=2, column=0, columnspan=3, sticky='ew')
-        self.label_tracked_folder = Label(self.window, text = "Dossier traqué : "+self.event_handler.folder_to_track, font= ('Helvetica', 12), bg = None, fg= 'black')
-        self.label_tracked_folder.grid(row=3, column=0, columnspan=3, sticky='ew')
+        self.label_tracked_folder = Label(self.window, text = "Dossier traqué : ", font= ('Helvetica', 12), bg = None, fg= 'black')
+        self.label_tracked_folder.grid(row=3, column=0, columnspan=1, sticky='ew')
+        self.button_open_selected_tracked_folder = Button(
+            self.window,
+            text=self.event_handler.folder_to_track,
+            font=('Helvetica', 12),
+            bg=None,
+            fg='black', 
+            command= lambda: self.open_folder(self.event_handler.folder_to_track))
+        self.button_open_selected_tracked_folder.grid(row=3, column=1, columnspan=2, sticky='ew')
 
     def set_reception_folder_button(self):
         self.button_select_reception_folder = Button(
@@ -106,14 +117,23 @@ class TkinterWindow:
             fg='black', 
             command= lambda:[f() for f in [self.event_handler.get_reception_folder, self.update_reception_folder]])
         self.button_select_reception_folder.grid(row=4, column=0, columnspan=3, sticky='ew')
-        self.label_reception_folder = Label(self.window, text = "Dossier de réception : "+self.event_handler.folder_destination, font= ('Helvetica', 12), bg = None, fg= 'black')
-        self.label_reception_folder.grid(row=5, column=0, columnspan=3, sticky='ew')
+        self.label_reception_folder = Label(self.window, text = "Dossier de réception : ", font= ('Helvetica', 12), bg = None, fg= 'black')
+        self.label_reception_folder.grid(row=5, column=0, columnspan=1, sticky='ew')
+        self.button_open_selected_reception_folder = Button(
+            self.window,
+            text=self.event_handler.folder_destination,
+            font=('Helvetica', 12),
+            bg=None,
+            fg='black', 
+            command= lambda: self.open_folder(self.event_handler.folder_destination))
+        self.button_open_selected_reception_folder.grid(row=5, column=1, columnspan=2, sticky='ew')
+
     
     def update_traqued_folder(self):
-        self.label_tracked_folder.config(text= "Dossier traqué : "+ self.event_handler.folder_to_track)
+        self.button_open_selected_tracked_folder.config(text = self.event_handler.folder_to_track)
 
     def update_reception_folder(self):
-        self.label_reception_folder.config(text= "Dossier de réception : "+ self.event_handler.folder_destination)
+        self.button_open_selected_reception_folder.config(text = self.event_handler.folder_destination)
     
     def set_button_start(self):
         self.button_start = Button(self.window,text="Démarrer",font=('Helvetica', 12),bg='green',fg='black', command=self.start_file_organizer)
