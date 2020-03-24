@@ -53,8 +53,18 @@ class MyHandler(FileSystemEventHandler):
             logging.info(entry)
         self.tkWindow.log_book.config(state="disabled")
     
-    def run_once(self):
+    def run_once(self, bol=True):
+        if bol:
+            self.tkWindow.log_book.config(state="normal")
+            self.tkWindow.print_on_logbook("Début lancement rangement manuel")
+            self.tkWindow.log_book.config(state="disabled")
+            logging.info("Début lancement rangement manuel")
         self.on_modified(None)
+        if bol:
+            self.tkWindow.log_book.config(state="normal")
+            logging.info("Fin lancement rangement manuel")
+            self.tkWindow.print_on_logbook("Fin lancement rangement manuel")
+            self.tkWindow.log_book.config(state="disabled")
     
     def get_traqued_folder(self):
         tmpDir = filedialog.askdirectory(initialdir=self.currdir, title='Selectionner le dossier à traquer')
@@ -83,12 +93,14 @@ class TkinterWindow:
 
     def set_label_title(self, text = 'Bienvenue sur File Organizer', font = ('Helvetica', 18), bg = 'yellow', fg = 'black' ):
         self.label_title = Label(self.window,text = text, font= font, bg = bg,fg= fg)
-        self.label_title.grid(row=0, column=0, columnspan=3, sticky='new')
+        self.label_title.grid(row=0, column=0, columnspan=3, sticky='new', pady=(0, 10))
 
     def open_folder(self, path):
         webbrowser.open(path)
 
     def set_tracked_folder_button(self):
+        self.label_change_tracked_folder = Label(self.window, text = "Changer dossier traqué : ", font= ('Helvetica', 12), bg ='white', fg= 'black')
+        self.label_change_tracked_folder.grid(row=2, column=0, columnspan=1, sticky='ew')
         self.button_select_tracked_folder = Button(
             self.window,
             text="Selectionner le dossier à traquer",
@@ -96,8 +108,8 @@ class TkinterWindow:
             bg='red',
             fg='black', 
             command= lambda:[f() for f in [self.event_handler.get_traqued_folder, self.update_traqued_folder]])
-        self.button_select_tracked_folder.grid(row=2, column=0, columnspan=3, sticky='ew')
-        self.label_tracked_folder = Label(self.window, text = "Dossier traqué : ", font= ('Helvetica', 12), bg = None, fg= 'black')
+        self.button_select_tracked_folder.grid(row=2, column=1, columnspan=2, sticky='ew')
+        self.label_tracked_folder = Label(self.window, text = "Dossier traqué : ", font= ('Helvetica', 12), bg ='white', fg= 'black')
         self.label_tracked_folder.grid(row=3, column=0, columnspan=1, sticky='ew')
         self.button_open_selected_tracked_folder = Button(
             self.window,
@@ -109,6 +121,8 @@ class TkinterWindow:
         self.button_open_selected_tracked_folder.grid(row=3, column=1, columnspan=2, sticky='ew')
 
     def set_reception_folder_button(self):
+        self.label_change_tracked_folder = Label(self.window, text = "Changer dossier de réception : ", font= ('Helvetica', 12), bg ='white', fg= 'black')
+        self.label_change_tracked_folder.grid(row=4, column=0, columnspan=1, sticky='ew')
         self.button_select_reception_folder = Button(
             self.window,
             text="Selectionner le dossier de réception",
@@ -116,8 +130,8 @@ class TkinterWindow:
             bg='red',
             fg='black', 
             command= lambda:[f() for f in [self.event_handler.get_reception_folder, self.update_reception_folder]])
-        self.button_select_reception_folder.grid(row=4, column=0, columnspan=3, sticky='ew')
-        self.label_reception_folder = Label(self.window, text = "Dossier de réception : ", font= ('Helvetica', 12), bg = None, fg= 'black')
+        self.button_select_reception_folder.grid(row=4, column=1, columnspan=2, sticky='ew', pady=(10, 0))
+        self.label_reception_folder = Label(self.window, text = "Dossier de réception : ", font= ('Helvetica', 12), bg ='white', fg= 'black')
         self.label_reception_folder.grid(row=5, column=0, columnspan=1, sticky='ew')
         self.button_open_selected_reception_folder = Button(
             self.window,
@@ -136,20 +150,22 @@ class TkinterWindow:
         self.button_open_selected_reception_folder.config(text = self.event_handler.folder_destination)
     
     def set_button_start(self):
-        self.button_start = Button(self.window,text="Démarrer",font=('Helvetica', 12),bg='green',fg='black', command=self.start_file_organizer)
-        self.button_start.grid(row=6, column=0)
+        self.button_start = Button(self.window,text="Démarrer",font=('Helvetica', 12),bg='green',fg='white', command=self.start_file_organizer)
+        self.button_start.grid(row=6, column=0, padx=2, pady=10, sticky='news')
 
     def set_button_stop(self):
-        self.button_stop = Button(self.window,text="Arreter", state='disabled', font=('Helvetica', 12),bg='red',fg='black', command=self.stop_file_organize)
-        self.button_stop.grid(row=6, column=2)
+        self.button_stop = Button(self.window,text="Arreter", state='disabled', font=('Helvetica', 12),bg='red',fg='white', command=self.stop_file_organize)
+        self.button_stop.grid(row=6, column=2, padx=2, pady=10, sticky='news')
     
     def set_button_run_once(self):
-        self.button_run_once = Button(self.window,text="Ranger dossier", font=('Helvetica', 12),bg='blue',fg='black', command=self.event_handler.run_once)
-        self.button_run_once.grid(row=6, column=1)
+        self.button_run_once = Button(self.window,text="Ranger dossier", font=('Helvetica', 12),bg='blue',fg='white', command=self.event_handler.run_once)
+        self.button_run_once.grid(row=6, column=1, padx=2, pady=10, sticky='news')
     
     def set_log_book(self):
+        self.label_log_title = Label(self.window,text = "logbook", font= ('Helvetica', 12), bg = 'white',fg= "black")
+        self.label_log_title.grid(row=7, column=0, columnspan=3, sticky='new')
         self.log_frame = Frame(self.window)
-        self.log_frame.grid(row=7, column=0, columnspan=3)
+        self.log_frame.grid(row=8, column=0, columnspan=3)
         self.log_book = Text(self.log_frame, font= ('Helvetica', 8))
         self.log_scroll = Scrollbar(self.log_frame, command = self.log_book.yview)
         self.log_book.config(yscrollcommand=self.log_scroll.set)
@@ -174,7 +190,7 @@ class TkinterWindow:
             self.observer = Observer()
             self.observer.schedule(self.event_handler, self.event_handler.folder_to_track, recursive=True)
         self.observer.start()
-        self.event_handler.run_once()
+        self.event_handler.run_once(False)
         self.button_select_tracked_folder.config(state="disabled")
         self.button_select_reception_folder.config(state="disabled")
         self.button_start.config(state="disabled")
