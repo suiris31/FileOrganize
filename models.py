@@ -3,7 +3,7 @@ from watchdog.observers import Observer
 from tkinter import *
 from initial_config import *
 from tkinter import filedialog
-import os, time, datetime, logging, subprocess, webbrowser
+import os, time, datetime, logging, subprocess, webbrowser, json
 from pathlib import Path
 
 
@@ -11,6 +11,7 @@ class MyHandler(FileSystemEventHandler):
 
     def __init__(self):
         logging.basicConfig(filename='FileOrganizer.log', format='%(levelname)s:%(message)s', level=logging.DEBUG)
+        self.settings = SaveFile()
         self.tkWindow = TkinterWindow(self)
         self.tkWindow.set_window_title()
         self.tkWindow.set_window_background()
@@ -23,17 +24,11 @@ class MyHandler(FileSystemEventHandler):
         self.tkWindow.set_log_book()
         self.tkWindow.start_window()
 
-    folder_to_track = str(os.path.join(Path.home(), "Downloads"))
-    if not os.path.exists(os.path.join(Path.home(), "Desktop/reception")):
-        os.makedirs(os.path.join(Path.home(), "Desktop/reception"))
-    folder_destination = os.path.join(Path.home(), "Desktop/reception")
-    currdir = str(os.path.join(Path.home(), "Downloads"))
-
     def on_modified(self, event):
         self.tkWindow.log_book.config(state="normal")
-        for filename in os.listdir(self.folder_to_track):
+        for filename in os.listdir(self.settings.tracked_folder):
             extension = os.path.splitext(filename)[1]
-            src = self.folder_to_track + "/" + filename
+            src = self.settings.tracked_folder + "/" + filename
             if extension.lower() in img_extentions:
                 subfoler="/img"
             elif extension.lower() in office_extentions:
@@ -44,7 +39,7 @@ class MyHandler(FileSystemEventHandler):
                 subfoler="/compressed"
             else:
                 subfoler="/undifined"
-            destination = self.folder_destination + subfoler
+            destination = self.settings.destination_folder + subfoler
             if not os.path.exists(destination):
                 os.makedirs(destination)
             os.rename(src, destination+'/'+filename)
@@ -67,20 +62,20 @@ class MyHandler(FileSystemEventHandler):
             self.tkWindow.log_book.config(state="disabled")
     
     def get_traqued_folder(self):
-        tmpDir = filedialog.askdirectory(initialdir=self.currdir, title='Selectionner le dossier à traquer')
+        tmpDir = filedialog.askdirectory(initialdir=self.settings.currdir, title='Selectionner le dossier à traquer')
         if tmpDir:
-            self.folder_to_track = tmpDir
+            self.settings.tracked_folder = tmpDir
 
     def get_reception_folder(self):
-        tmpDir = filedialog.askdirectory(initialdir=self.currdir, title='Selectionner le dossier de réception')
+        tmpDir = filedialog.askdirectory(initialdir=self.settings.currdir, title='Selectionner le dossier de réception')
         if tmpDir:
-            self.folder_destination = tmpDir
+            self.settings.destination_folder = tmpDir
 
 class TkinterWindow:
     def __init__(self, handler):
         self.observer = Observer()
         self.event_handler = handler
-        self.observer.schedule(self.event_handler, self.event_handler.folder_to_track, recursive=True)
+        self.observer.schedule(self.event_handler, self.event_handler.settings.tracked_folder, recursive=True)
         self.window = Tk()
         self.window.resizable(False, False)
         self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -113,11 +108,11 @@ class TkinterWindow:
         self.label_tracked_folder.grid(row=3, column=0, columnspan=1, sticky='ew')
         self.button_open_selected_tracked_folder = Button(
             self.window,
-            text=self.event_handler.folder_to_track,
+            text=self.event_handler.settings.tracked_folder,
             font=('Helvetica', 12),
             bg=None,
             fg='black', 
-            command= lambda: self.open_folder(self.event_handler.folder_to_track))
+            command= lambda: self.open_folder(self.event_handler.settings.tracked_folder))
         self.button_open_selected_tracked_folder.grid(row=3, column=1, columnspan=2, sticky='ew')
 
     def set_reception_folder_button(self):
@@ -135,19 +130,21 @@ class TkinterWindow:
         self.label_reception_folder.grid(row=5, column=0, columnspan=1, sticky='ew')
         self.button_open_selected_reception_folder = Button(
             self.window,
-            text=self.event_handler.folder_destination,
+            text=self.event_handler.settings.destination_folder,
             font=('Helvetica', 12),
             bg=None,
             fg='black', 
-            command= lambda: self.open_folder(self.event_handler.folder_destination))
+            command= lambda: self.open_folder(self.event_handler.settings.destination_folder))
         self.button_open_selected_reception_folder.grid(row=5, column=1, columnspan=2, sticky='ew')
 
     
     def update_traqued_folder(self):
-        self.button_open_selected_tracked_folder.config(text = self.event_handler.folder_to_track)
+        self.button_open_selected_tracked_folder.config(text = self.event_handler.settings.tracked_folder)
+        self.event_handler.settings.save_tracked_folder()
 
     def update_reception_folder(self):
-        self.button_open_selected_reception_folder.config(text = self.event_handler.folder_destination)
+        self.button_open_selected_reception_folder.config(text = self.event_handler.settings.destination_folder)
+        self.event_handler.settings.save_destination_folder()
     
     def set_button_start(self):
         self.button_start = Button(self.window,text="Démarrer",font=('Helvetica', 12),bg='green',fg='white', command=self.start_file_organizer)
@@ -188,7 +185,7 @@ class TkinterWindow:
     def start_file_organizer(self):
         if self.observer is None:
             self.observer = Observer()
-            self.observer.schedule(self.event_handler, self.event_handler.folder_to_track, recursive=True)
+            self.observer.schedule(self.event_handler, self.event_handler.settings.tracked_folder, recursive=True)
         self.observer.start()
         self.event_handler.run_once(False)
         self.button_select_tracked_folder.config(state="disabled")
@@ -206,3 +203,49 @@ class TkinterWindow:
     
     def start_window(self):
         self.window.mainloop()
+
+    
+class SaveFile:
+    saveStructure = {
+        "tracked_folder":"",
+        "destination_folder":""  
+    }
+
+    def __init__(self):
+        self.file = "save.json"
+        self.data = self.get_save_data()
+        self.set_settings()
+
+    def get_save_data(self):
+        with open(self.file, 'w+') as jsonfile:
+            if len(jsonfile.readlines()) != 0:
+                jsonfile.seek(0)
+                tmp = json.load(jsonfile)
+            else:
+                return self.saveStructure
+        return tmp
+
+    def set_settings(self):
+        if not self.data or self.data["tracked_folder"] == "":
+            self.tracked_folder = str(os.path.join(Path.home(), "Downloads"))
+        else:
+            self.tracked_folder = str(self.data["tracked_folder"])
+        self.save_tracked_folder()
+        if not self.data or self.data["destination_folder"] == "":
+            if not os.path.exists(os.path.join(Path.home(), "Desktop/reception")):
+                os.makedirs(os.path.join(Path.home(), "Desktop/reception"))
+            self.destination_folder = os.path.join(Path.home(), "Desktop/reception")
+        else:
+            self.destination_folder = str(self.data["destination_folder"])
+        self.save_destination_folder()
+        self.currdir = str(os.path.join(Path.home(), "Downloads"))
+
+    def save_tracked_folder(self):
+        self.data['tracked_folder'] = str(self.tracked_folder)
+        with open('save.json', 'w') as f:
+            json.dump(self.data, f)
+    
+    def save_destination_folder(self):
+        self.data['destination_folder'] = str(self.destination_folder)
+        with open('save.json', 'w') as f:
+            json.dump(self.data, f)
