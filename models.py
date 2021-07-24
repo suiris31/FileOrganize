@@ -4,6 +4,7 @@ from tkinter import *
 from initial_config import *
 from tkinter import filedialog
 import os, time, datetime, logging, subprocess, webbrowser, json
+from os.path import exists
 from pathlib import Path
 
 
@@ -217,7 +218,10 @@ class SaveFile:
         self.set_settings()
 
     def get_save_data(self):
-        with open(self.file, 'w+') as jsonfile:
+        if not exists('save.json'):
+            tmpfile = open('save.json', 'w')
+            tmpfile.close()
+        with open(self.file, 'r') as jsonfile:
             if len(jsonfile.readlines()) != 0:
                 jsonfile.seek(0)
                 tmp = json.load(jsonfile)
@@ -226,12 +230,12 @@ class SaveFile:
         return tmp
 
     def set_settings(self):
-        if not self.data or self.data["tracked_folder"] == "":
+        if self.data["tracked_folder"] == "":
             self.tracked_folder = str(os.path.join(Path.home(), "Downloads"))
         else:
             self.tracked_folder = str(self.data["tracked_folder"])
         self.save_tracked_folder()
-        if not self.data or self.data["destination_folder"] == "":
+        if self.data["destination_folder"] == "":
             if not os.path.exists(os.path.join(Path.home(), "Desktop/reception")):
                 os.makedirs(os.path.join(Path.home(), "Desktop/reception"))
             self.destination_folder = os.path.join(Path.home(), "Desktop/reception")
